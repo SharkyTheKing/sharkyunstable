@@ -1,0 +1,9 @@
+{
+    "author": ["Sharky The King"],
+    "install_msg": "Warning: This repo is considered unstable, any cog you install is at your own risks.",
+    "name": "sharkyunstable",
+    "description": "Cog/Codes that Sharky considers unstable to not be on main repo.",
+    "tags": [
+        "None"
+    ]
+}
