@@ -1,10 +1,9 @@
+import logging
+from dataclasses import dataclass, field
 from typing import Union
 
 import discord
-import logging
 from redbot.core.commands.context import Context
-
-from dataclasses import dataclass, field
 
 log = logging.getLogger(name="red.filtersystem")
 
