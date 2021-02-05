@@ -1,11 +1,12 @@
+import re
+from typing import Optional
+
 import discord
-from redbot.core import commands, Config, checks
+from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
-import re
-from typing import Optional
 from .auditlog import AuditLogging, PrivateLogEntry, PublicLogEntry
 
 BaseCog = getattr(commands, "Cog", object)
