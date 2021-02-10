@@ -81,10 +81,10 @@ class BanishShin(BASECOG):
         await ctx.tick()
 
     @checks.mod()
-    @commands.command(name="unbanish", usage="<member> <reason>")
-    async def unbanish_user(self, ctx, member: discord.Member, *, reason: str):
+    @commands.command(name="unbanish", usage="<member>")
+    async def unbanish_user(self, ctx, member: discord.Member):
         """
-        Unbanish
+        Unbanishes the member.
         """
         get_role_ids = await self.config.member(member).roles()
         if not get_role_ids:
@@ -116,17 +116,16 @@ class BanishShin(BASECOG):
         if channel is False:
             return
 
-        await channel.send(embed=await self.log_unbanish(member, reason))
+        await channel.send(embed=await self.log_unbanish(member))
         await ctx.send("You have unbanished {}".format(member.mention))
 
     @checks.mod()
-    @commands.command(name="banish", usage="<member> <reason>")
-    async def banish_user(self, ctx, member: discord.Member, *, reason: str):
+    @commands.command(name="banish", usage="<member>")
+    async def banish_user(self, ctx, member: discord.Member):
         """
         Banishes the member.
 
         `Member`: The Discord member in the server.
-        `Reason`: The reason why they're being banished.
         """
         roles = member.roles[-1:0:-1]
         list_of_roles = []
@@ -151,7 +150,7 @@ class BanishShin(BASECOG):
             channel = await self.get_log_channel(ctx.guild)
             if channel is False:
                 return
-            await channel.send(embed=await self.log_removal(member, list_of_roles, reason))
+            await channel.send(embed=await self.log_removal(member, list_of_roles))
 
         adding_role = await self.get_banish_role(ctx.guild)
         if adding_role is False:
@@ -185,7 +184,7 @@ class BanishShin(BASECOG):
 
         return role
 
-    async def log_unbanish(self, member, reason):
+    async def log_unbanish(self, member):
         """
         Logs when a member is unbanished
         """
@@ -193,10 +192,9 @@ class BanishShin(BASECOG):
         embed.title = "Member has been unbanished"
         embed.set_author(name=member, icon_url=member.avatar_url_as(static_format="png"))
         embed.set_footer(text="User ID: {member_id}".format(member_id=member.id))
-        embed.description = "**Reason**:\n" + reason
         return embed
 
-    async def log_removal(self, member, role, reason):
+    async def log_removal(self, member, role):
         """
         Thank you Core Red.
 
@@ -229,7 +227,6 @@ class BanishShin(BASECOG):
         embed = discord.Embed()
         embed.set_author(name=member, icon_url=member.avatar_url_as(static_format="png"))
         embed.set_footer(text="User ID: {member_id}".format(member_id=member.id))
-        embed.description = "**Reason**:\n" + reason
         embed.title = "Member has been banished"
         if role_str is not None:
             embed.add_field(
