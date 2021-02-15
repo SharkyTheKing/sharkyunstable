@@ -150,7 +150,9 @@ class BanishShin(BASECOG):
             channel = await self.get_log_channel(ctx.guild)
             if channel is False:
                 return
-            await channel.send(embed=await self.log_removal(member, ctx.author, list_of_roles, reason))
+            await channel.send(
+                embed=await self.log_removal(member, ctx.author, list_of_roles, reason)
+            )
 
         adding_role = await self.get_banish_role(ctx.guild)
         if adding_role is False:
