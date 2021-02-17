@@ -7,7 +7,12 @@ from redbot.core import Config, checks, commands
 BASECOG = getattr(commands, "Cog", object)
 
 
-GUILD_CONFIG = {"toggle_active": False, "recording_channel": None, "banish_role": None}
+GUILD_CONFIG = {
+    "toggle_active": False,
+    "recording_channel": None,
+    "banish_role": None,
+    "ignore_roles": [],
+}
 MEMBER_CONFIG = {"roles": []}
 
 
@@ -36,6 +41,30 @@ class BanishShin(BASECOG):
     async def set_banish_settings(self, ctx):
         ...
 
+    @set_banish_settings.command(name="showsettings", aliases=["showsetting", "list"])
+    async def show_settings(self, ctx):
+        """
+        Show guild settings
+        """
+        embed = discord.Embed()
+        embed.title = "{guild}'s settings".format(guild=ctx.guild.name)
+        banish_role = await self.get_banish_role(ctx.guild)
+        if banish_role:
+            embed.add_field(name="Banish Role:", value=banish_role.mention)
+
+        log_channel = await self.get_log_channel(ctx.guild)
+        if log_channel:
+            embed.add_field(name="ModLog", value=log_channel.mention)
+
+        ignore_string = ""
+        ignore_roles = await self.get_ignore_roles(ctx.guild)
+        if ignore_roles:
+            for r in ignore_roles:
+                ignore_string += "{}, ".format(r)
+            embed.add_field(name="Ignoring Roles:", value=ignore_string)
+
+        await ctx.send(embed=embed)
+
     @set_banish_settings.command("banishchannel")
     async def log_banish_command(self, ctx, channel: Optional[discord.TextChannel]):
         """
@@ -47,6 +76,38 @@ class BanishShin(BASECOG):
 
         await self.config.guild(ctx.guild).recording_channel.set(channel.id)
         await ctx.send("Done. Now logging banishes to {}".format(channel.mention))
+
+    @set_banish_settings.command("addignorerole")
+    async def ignore_roles(self, ctx, role: discord.Role):
+        """
+        Adds roles to ignore list.
+        """
+        status = "Error"
+        if role >= ctx.author.top_role:
+            return await ctx.send("You can't set a role equal to or higher than your own.")
+
+        if role >= ctx.guild.me.top_role:
+            return await ctx.send("You can't set a role equal to or higher than the bot.")
+
+        async with self.config.guild(ctx.guild).ignore_roles() as ignore_role:
+            ignore_role.append(role.id)
+            status = "Added"
+
+        await ctx.send("Done. {role_name} is now {status}".format(role_name=role.name, status=status))
+
+    @set_banish_settings.command("delignorerole")
+    async def unignore_roles(self, ctx, role: discord.Role):
+        if role.id not in await self.config.guild(ctx.guild).ignore_roles():
+            return await ctx.send("That role is not in the list. Please double check the role.")
+
+        status = "Error"
+
+        async with self.config.guild(ctx.guild).ignore_roles() as ignore_role:
+            ignore_role.remove(role.id)
+            status = "Removed"
+
+        await ctx.send("Done. {role_name} is now {status}".format(role_name=role.name, status=status))
+
 
     @set_banish_settings.command(name="banishrole")
     async def banish_role(self, ctx, role: Optional[discord.Role]):
@@ -129,6 +190,7 @@ class BanishShin(BASECOG):
         """
         roles = member.roles[-1:0:-1]
         list_of_roles = []
+        protected_roles = await self.get_ignore_roles(ctx.guild)
 
         if any([isinstance(member, discord.Member) and member.top_role >= ctx.me.top_role]):
             return await ctx.send("I can't action someone higher or in the same role as me.")
@@ -136,6 +198,11 @@ class BanishShin(BASECOG):
         if roles:
             async with self.config.member(member).roles() as config_role:
                 for author_role in roles:
+                    #if author_role == ctx.guild.premium_subscriber_role:
+                    #    continue
+                    if protected_roles:
+                        if author_role in protected_roles:
+                            continue
                     list_of_roles.append(author_role)  # for embed
                     config_role.append(author_role.id)
 
@@ -185,6 +252,23 @@ class BanishShin(BASECOG):
             return False
 
         return role
+
+    async def get_ignore_roles(self, guild: discord.Guild):
+        role_from_config = await self.config.guild(guild).ignore_roles()
+        if role_from_config is None:
+            return False
+
+        list_of_roles = []
+        for discord_role in role_from_config:
+            role: discord.Role = guild.get_role(discord_role)
+            if role is None:
+                continue
+            list_of_roles.append(role)
+
+        if list_of_roles is None:
+            return False
+
+        return list(list_of_roles)
 
     async def log_unbanish(self, member, author, reason: Optional[str]):
         """
