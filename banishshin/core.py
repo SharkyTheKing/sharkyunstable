@@ -149,9 +149,10 @@ class BanishShin(BASECOG):
         """
         get_role_ids = await self.config.member(member).roles()
         if not get_role_ids:
-            return await ctx.send(
-                "This user has not been banished. If this is incorrect, please contact Sharky."
-            )
+            #return await ctx.send(
+            #    "This user has not been banished. If this is incorrect, please contact Sharky."
+            #)
+            pass
 
         banish_role = await self.get_banish_role(ctx.guild)
         if banish_role is not False:
@@ -162,16 +163,17 @@ class BanishShin(BASECOG):
                     "Something happened with removing banish role. Contact Sharky, please."
                 )
 
-        roles = []
-        for role in get_role_ids:
-            role_object = discord.utils.get(ctx.guild.roles, id=int(role))
-            roles.append(role_object)
+        if get_role_ids:
+            roles = []
+            for role in get_role_ids:
+                role_object = discord.utils.get(ctx.guild.roles, id=int(role))
+                roles.append(role_object)
 
-        try:
-            await member.add_roles(*roles)
-            await self.config.member(member).clear()
-        except:
-            return await ctx.send("Something happened with adding roles. Please contact Sharky.")
+            try:
+                await member.add_roles(*roles)
+                await self.config.member(member).clear()
+            except:
+                return await ctx.send("Something happened with adding roles. Please contact Sharky.")
 
         channel = await self.get_log_channel(ctx.guild)
         if channel is False:
@@ -194,6 +196,9 @@ class BanishShin(BASECOG):
 
         if any([isinstance(member, discord.Member) and member.top_role >= ctx.me.top_role]):
             return await ctx.send("I can't action someone higher or in the same role as me.")
+
+        if await self.config.member(member).roles():
+            return await ctx.send("This user has already been banished. If this isn't the case, please contact Sharky.")
 
         if roles:
             async with self.config.member(member).roles() as config_role:
@@ -289,29 +294,31 @@ class BanishShin(BASECOG):
 
         https://github.com/Cog-Creators/Red-DiscordBot/blob/1747d901d137ec8d55ba6a5d482df343f4902de9/redbot/cogs/mod/names.py#L216-L250
         """
-        role_str = ", ".join([x.mention for x in role])
-        if len(role_str) > 1024:
-            continuation_string = (
-                "and {numeric_number} more roles not displayed due to embed limits."
-            )
-            available_length = 1024 - len(continuation_string)
+        if role:
+            role_str = ", ".join([x.mention for x in role])
+            if len(role_str) > 1024:
+                continuation_string = (
+                    "and {numeric_number} more roles not displayed due to embed limits."
+                )
+                available_length = 1024 - len(continuation_string)
 
-            role_chunks = []
-            remaining_roles = 0
+                role_chunks = []
+                remaining_roles = 0
 
-            for r in role:
-                chunk = f"{r.mention}, "
-                chunk_size = len(chunk)
+                for r in role:
+                    chunk = f"{r.mention}, "
+                    chunk_size = len(chunk)
 
-                if chunk_size < available_length:
-                    available_length -= chunk_size
-                    role_chunks.append(chunk)
-                else:
-                    remaining_roles += 1
+                    if chunk_size < available_length:
+                        available_length -= chunk_size
+                        role_chunks.append(chunk)
+                    else:
+                        remaining_roles += 1
 
-            role_chunks.append(continuation_string.format(numeric_number=remaining_roles))
-
-            role_str = "".join(role_chunks)
+                role_chunks.append(continuation_string.format(numeric_number=remaining_roles))
+                role_str = "".join(role_chunks)
+        else:
+            role_str = "No roles removed."
 
         embed = discord.Embed()
         embed.set_author(name=member, icon_url=member.avatar_url_as(static_format="png"))
