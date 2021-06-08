@@ -443,12 +443,11 @@ class FilterSystem(BaseCog, AuditLogging):
         This is meant for checking on who's adding stuff to the filter.
         """
         guild = ctx.guild
-        private_log_channel = self.config.guild(guild).private_logs
         if channel is None:
-            await private_log_channel.clear()
+            await self.config.guild(guild).private_logs.clear()
             await ctx.send("Cleared the logging channel")
         else:
-            await private_log_channel.set(channel.id)
+            await self.config.guild(guild).private_logs.set(channel.id)
             await ctx.send("Set the current logging channel to {}".format(channel.mention))
 
     @commands.Cog.listener(name="on_message_without_command")
